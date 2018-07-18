@@ -1,0 +1,95 @@
+#!/bin/sh
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# Copyright © 2007-2018 ANSSI. All Rights Reserved.
+set -e
+#######################################################################
+# CLIP data update tool
+# Author: EADS Defence & Security
+#######################################################################
+
+# Global variables
+g_version="1.0.1"
+
+# Binaries directories
+g_bin_dir="/bin/"
+
+############################################
+# Function : display the usage of the tool
+############################################
+usage() {
+	${g_bin_dir}echo "Usage : clip-update-user-data [-hv]"
+	${g_bin_dir}echo "Launch clip user data update scripts"
+	${g_bin_dir}echo ""
+	${g_bin_dir}echo "Options are :"
+	${g_bin_dir}echo "  -h			print this help"
+	${g_bin_dir}echo "  -v			print the version of this tool"
+	${g_bin_dir}echo ""
+}
+
+############################################
+# Function : display the version of the tool
+############################################
+version() {
+	${g_bin_dir}echo "clip-update-user-data version $g_version"
+}
+
+############################################
+# Function : verify if a directory exists
+############################################
+verify_directory() {
+	if [ ! -d $1 ] 
+	then
+		${g_bin_dir}echo "Directory $1 does not exist"
+		exit 1
+	fi
+}
+
+############################################
+# Main
+############################################
+
+# Verify and set the options
+while getopts vh arg
+do
+	case $arg in
+		v)
+			version
+			exit 0
+		;;
+		h)
+			usage
+			exit 0
+		;;
+		\?)
+			usage
+			exit 2
+		;;
+	esac
+done
+shift `${g_bin_dir}expr $OPTIND - 1`
+
+scripts_dir="/usr/local/bin/clip-user-data-update-scripts"
+log_file="/home/user/.data-update.log"
+
+verify_directory ${scripts_dir}
+
+# Execution
+liste=`${g_bin_dir}ls ${scripts_dir}`
+
+if [[ -n "${liste}" ]]; then
+	echo "" > ${log_file}
+fi
+
+for elt in ${liste}
+do
+	if [ -x ${scripts_dir}/${elt} ]
+	then
+		echo "`${g_bin_dir}date -I'minutes'` - Debut d'execution de $elt" >> ${log_file} 
+		set +e
+		${scripts_dir}/${elt} >> ${log_file} 2>&1 
+		set -e
+		echo "`${g_bin_dir}date -I'minutes'` - Fin d'execution de $elt" >> ${log_file} 
+	fi
+done
+
+exit 0
